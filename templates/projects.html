@@ -1,0 +1,85 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Projects (Admin)</h2>
+<div class="card mb-4">
+  <div class="card-header">Add Project</div>
+  <div class="card-body">
+    <form id="project-form" class="row g-3">
+      <div class="col-md-3"><label class="form-label">Code</label><input name="project_code" class="form-control"
+          required></div>
+      <div class="col-md-5"><label class="form-label">Name</label><input name="project_name" class="form-control"
+          required></div>
+      <div class="col-md-2"><label class="form-label">Start Date</label><input name="start_date" type="date"
+          class="form-control" required></div>
+      <div class="col-md-2"><label class="form-label">Target Date</label><input name="target_date" type="date"
+          class="form-control" required></div>
+      <div class="col-md-3"><label class="form-label">Manager (Employee ID)</label><input name="manager_id"
+          class="form-control"></div>
+      <div class="col-md-2"><label class="form-label">Extend Date</label><input name="extend_date" type="date"
+          class="form-control"></div>
+      <div class="col-md-5"><label class="form-label">Extend Reason</label><input name="extend_reason"
+          class="form-control"></div>
+      <div class="col-12"><button class="btn btn-primary" type="submit">Create</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Project List</div>
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Start</th>
+          <th>Target</th>
+          <th>Extend</th>
+          <th>Reason</th>
+          <th>Manager</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="projects-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="projectEditModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Project</h5><button type="button" class="btn-close" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="project-edit-form">
+          <input type="hidden" name="id">
+          <div class="mb-2"><label class="form-label">Code</label><input name="project_code" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Name</label><input name="project_name" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Start Date</label><input name="start_date" type="date"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Target Date</label><input name="target_date" type="date"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Extend Date</label><input name="extend_date" type="date"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Extend Reason</label><input name="extend_reason"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Manager (Employee ID)</label><input name="manager_id"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Status</label>
+            <select name="status" class="form-select">
+              <option>Active</option>
+              <option>Completed</option>
+              <option>Inactive</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button
+          id="project-edit-save" class="btn btn-primary">Save</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

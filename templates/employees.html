@@ -1,0 +1,69 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Employees (Admin)</h2>
+<div class="card mb-4">
+  <div class="card-header">Add Employee</div>
+  <div class="card-body">
+    <form id="employee-form" class="row g-3">
+      <div class="col-md-2"><label class="form-label">Employee ID</label><input name="id" class="form-control" required>
+      </div>
+      <div class="col-md-4"><label class="form-label">Name</label><input name="name" class="form-control" required>
+      </div>
+      <div class="col-md-3"><label class="form-label">Department</label><input name="department" class="form-control">
+      </div>
+      <div class="col-md-3"><label class="form-label">Email</label><input name="email" type="email"
+          class="form-control"></div>
+      <div class="col-md-3"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+      <div class="col-md-3"><label class="form-label">Hire Date</label><input name="hire_date" type="date"
+          class="form-control"></div>
+      <div class="col-12"><button class="btn btn-primary" type="submit">Create</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Employee List</div>
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Hire Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="employees-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="employeeEditModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Employee</h5><button type="button" class="btn-close" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="employee-edit-form">
+          <input type="hidden" name="id">
+          <div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Department</label><input name="department" class="form-control">
+          </div>
+          <div class="mb-2"><label class="form-label">Email</label><input name="email" type="email"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Hire Date</label><input name="hire_date" type="date"
+              class="form-control"></div>
+        </form>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button
+          id="employee-edit-save" class="btn btn-primary">Save</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

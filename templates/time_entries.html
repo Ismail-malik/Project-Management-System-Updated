@@ -1,0 +1,82 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Time Entries</h2>
+<div class="card mb-4">
+  <div class="card-header">Add Time Entry {% if session.get('is_admin') %}(Admin){% else %}(Employee){% endif %}</div>
+  <div class="card-body">
+    <form id="timeentry-form" class="row g-3">
+      {% if session.get('is_admin') %}
+      <div class="col-md-3"><label class="form-label">Employee</label><select id="employee-select" name="employee_id"
+          class="form-select"></select></div>
+      <div class="col-md-4"><label class="form-label">Project</label><select id="project-select" name="project_id"
+          class="form-select"></select></div>
+      {% else %}
+      <div class="col-md-3"><label class="form-label">Employee</label><select id="employee-self-select"
+          name="employee_id" class="form-select"></select></div>
+      <div class="col-md-4"><label class="form-label">Project</label><select id="project-public-select"
+          name="project_id" class="form-select"></select></div>
+      {% endif %}
+      <div class="col-md-2"><label class="form-label">Date</label><input name="entry_date" type="date"
+          class="form-control" required></div>
+      <div class="col-md-2"><label class="form-label">Start</label><input name="start_time" type="time"
+          class="form-control" required></div>
+      <div class="col-md-2"><label class="form-label">End</label><input name="end_time" type="time" class="form-control"
+          required></div>
+      <div class="col-md-12"><label class="form-label">Notes</label><input name="notes" class="form-control"></div>
+      <div class="col-12"><button class="btn btn-primary" type="submit">Create</button></div>
+      <div class="text-muted small">Working hours are 08:00–17:00. Time after 17:00 counts as overtime.</div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">Entries</div>
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Employee</th>
+          <th>Project</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Working (h)</th>
+          <th>Overtime (h)</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="timeentries-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="timeEntryEditModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Time Entry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="timeentry-edit-form">
+          <input type="hidden" name="id">
+          <div class="mb-2"><label class="form-label">Employee (Admin can change)</label><select
+              id="employee-edit-select" class="form-select"></select></div>
+          <div class="mb-2"><label class="form-label">Project (Admin can change)</label><select id="project-edit-select"
+              class="form-select"></select></div>
+          <div class="mb-2"><label class="form-label">Date</label><input name="entry_date" type="date"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Start Time</label><input name="start_time" type="time"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">End Time</label><input name="end_time" type="time"
+              class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Notes</label><input name="notes" class="form-control"></div>
+        </form>
+        <div class="text-muted small">Working & overtime recalculated on save.</div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button
+          id="timeentry-edit-save" class="btn btn-primary">Save</button></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

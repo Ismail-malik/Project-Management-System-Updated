@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="login-page">
+  <div class="login-card">
+    <h2 class="h5 mb-3">Login</h2>
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('login') }}" class="mt-2">
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input id="username" name="username" type="text" class="form-control" autocomplete="username" required>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input id="password" name="password" type="password" class="form-control" autocomplete="current-password"
+          required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Sign in</button>
+    </form>
+    <div class="demo-note small mt-3">Admin: <strong>admin / admin123</strong> • Employee: <strong>Ismail /
+        Ismail123</strong></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Project Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+{% set on_login = (request.endpoint == 'login') %}
+
+<body>
+  <!-- Global title at very top -->
+  <div class="title-strip">
+    <div class="container page-wrap">
+      <h1 class="global-title">Project Management System</h1>
+    </div>
+  </div>
+
+  <!-- Blue topbar (no labels on login) -->
+  <div class="topbar py-2">
+    <div class="container page-wrap d-flex align-items-center justify-content-between">
+      {% if on_login %}
+      <div></div>
+      <div class="right"><a class="btn btn-outline-light btn-sm" href="{{ url_for('login') }}">Login</a></div>
+      {% else %}
+      <div class="left d-flex align-items-center">
+        <a href="/">Home</a>
+        {% if session.get('is_admin') %}
+        <a href="/employees">Employees</a>
+        <a href="/projects">Projects</a>
+        {% endif %}
+        <a href="/time-entries">Time Entries</a>
+      </div>
+      <div class="right">
+        {% if session.get('user') %}
+        <span class="me-3">Signed in as {{ session.get('user') }}{% if session.get('is_admin') %} (Admin){% endif
+          %}</span>
+        <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+        <a class="btn btn-outline-light btn-sm" href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="container page-wrap content-wrap">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+
+</html>

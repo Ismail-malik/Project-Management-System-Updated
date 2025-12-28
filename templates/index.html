@@ -1,0 +1,76 @@
+{% extends 'layout.html' %}
+{% block content %}
+<h2>Home</h2>
+<div class="row g-3 mb-3">
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Employees</div>
+      <div id="employees-count" class="display-6">0</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Projects</div>
+      <div id="projects-count" class="display-6">0</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Active</div>
+      <div id="active-projects" class="display-6">0</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Overdue</div>
+      <div id="overdue-projects" class="display-6">0</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Working (h)</div>
+      <div id="working-month" class="display-6">0</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card p-3 stat-card">
+      <div class="text-muted">Overtime (h)</div>
+      <div id="overtime-month" class="display-6">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card chart-card">
+      <div class="card-header">Hours per Project (This Month)</div>
+      <div class="card-body"><canvas id="hoursPerProjectChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card chart-card">
+      <div class="card-header">Top Employees by Overtime (This Month)</div>
+      <div class="card-body"><canvas id="topEmployeesOvertimeChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<h5>Projects Overview</h5>
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Days Gone</th>
+        <th>Days Remaining</th>
+        <th>Overdue Days</th>
+        <th>Working (h)</th>
+        <th>Overtime (h)</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="projects-body"></tbody>
+  </table>
+</div>
+{% endblock %}
