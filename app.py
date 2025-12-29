@@ -322,33 +322,91 @@ def update_time_entry(tid):
 def delete_time_entry(tid): t = TimeEntry.query.get_or_404(tid); db.session.delete(t); db.session.commit(); return jsonify({'status':'deleted'})
 
 # dashboard
+
 @app.route('/api/dashboard')
 @login_required
 def dashboard():
-    today = date.today(); month_start = date(today.year, today.month, 1)
-    totals = {'employees': Employee.query.count(), 'projects': Project.query.count()}
-    proj_summaries = []; overdue_projects = 0; active_projects = 0
+    today = date.today()
+    month_start = date(today.year, today.month, 1)
+
+    # Totals based on status, not overdue
+    totals = {
+        'employees': Employee.query.count(),
+        'projects': Project.query.count(),
+        'active_projects': Project.query.filter(Project.status == 'Active').count(),
+        'overdue_projects': 0,  # will compute below
+    }
+
+    proj_summaries = []
+    overdue_projects = 0
+
     for p in Project.query.all():
         effective_target = p.extend_date or p.target_date
         days_gone = (today - p.start_date).days if today >= p.start_date else 0
-        days_remaining = (effective_target - today).days if effective_target and effective_target >= today else 0
-        overdue_days = (today - effective_target).days if effective_target and today > effective_target else 0
+        days_remaining = (
+            (effective_target - today).days
+            if effective_target and effective_target >= today
+            else 0
+        )
+        overdue_days = (
+            (today - effective_target).days
+            if effective_target and today > effective_target
+            else 0
+        )
+
+        # Overdue is independent of status (still useful to see)
         is_overdue = bool(effective_target and today > effective_target)
-        overdue_projects += 1 if is_overdue else 0
-        active_projects += 1 if not is_overdue else 0
-        entries = TimeEntry.query.filter(TimeEntry.project_id==p.id, TimeEntry.entry_date>=month_start, TimeEntry.entry_date<=today).all()
+        if is_overdue:
+            overdue_projects += 1
+
+        # Sum working/overtime this month for charts
+        entries = TimeEntry.query.filter(
+            TimeEntry.project_id == p.id,
+            TimeEntry.entry_date >= month_start,
+            TimeEntry.entry_date <= today
+        ).all()
         total_working = sum(e.working_hours for e in entries)
         total_overtime = sum(e.overtime_hours for e in entries)
-        proj_summaries.append({'project_id': p.id, 'project_code': p.project_code, 'project_name': p.project_name, 'days_gone': days_gone, 'days_remaining_to_target': days_remaining, 'overdue_days': overdue_days, 'total_working_hours_this_month': round(total_working, 2), 'total_overtime_hours_this_month': round(total_overtime, 2), 'status': p.status})
-    entries_month = TimeEntry.query.filter(TimeEntry.entry_date>=month_start, TimeEntry.entry_date<=today).all()
-    totals['active_projects'] = active_projects; totals['overdue_projects'] = overdue_projects
+
+        proj_summaries.append({
+            'project_id': p.id,
+            'project_code': p.project_code,
+            'project_name': p.project_name,
+            'days_gone': days_gone,
+            'days_remaining_to_target': days_remaining,
+            'overdue_days': overdue_days,
+            'total_working_hours_this_month': round(total_working, 2),
+            'total_overtime_hours_this_month': round(total_overtime, 2),
+            'status': p.status
+        })
+
+    # finalize counters
+    totals['overdue_projects'] = overdue_projects
+
+    # These two totals are fine as-is
+    entries_month = TimeEntry.query.filter(
+        TimeEntry.entry_date >= month_start,
+        TimeEntry.entry_date <= today
+    ).all()
     totals['working_hours_this_month'] = round(sum(e.working_hours for e in entries_month), 2)
     totals['overtime_hours_this_month'] = round(sum(e.overtime_hours for e in entries_month), 2)
+
+    # Top overtime employees (unchanged)
     overtime_by_emp = {}
     for e in entries_month:
         overtime_by_emp[e.employee_id] = overtime_by_emp.get(e.employee_id, 0.0) + e.overtime_hours
-    top_employees = sorted([{'employee_id': k, 'overtime_hours': round(v, 2)} for k, v in overtime_by_emp.items()], key=lambda x: x['overtime_hours'], reverse=True)[:5]
-    return jsonify({'totals': totals, 'projects': proj_summaries, 'top_employees_by_overtime': top_employees, 'business_hours': {'start': BUSINESS_START, 'end': BUSINESS_END}})
+    top_employees = sorted(
+        [{'employee_id': k, 'overtime_hours': round(v, 2)} for k, v in overtime_by_emp.items()],
+        key=lambda x: x['overtime_hours'],
+        reverse=True
+    )[:5]
+
+    return jsonify({
+        'totals': totals,
+        'projects': proj_summaries,
+        'top_employees_by_overtime': top_employees,
+        'business_hours': {'start': BUSINESS_START, 'end': BUSINESS_END}
+    })
 
 if __name__ == '__main__':
     with app.app_context():
