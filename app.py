@@ -417,5 +417,17 @@ if __name__ == '__main__':
             e4 = Employee(id='E004', name='Ismail', department='IT', email='ismail@example.com', phone='1004'); db.session.add(e4)
         if not User.query.get('Ismail'):
             u2 = User(username='Ismail', is_admin=False, employee_id='E004'); u2.set_password('Ismail123'); db.session.add(u2)
+        
+ # ✅ Add another employee + login here
+        if not Employee.query.get('E0015'):
+            e5 = Employee(id='E0015', name='Harihara', department='Manager',
+                          email='', phone='')
+            db.session.add(e5)
+
+        if not User.query.get('Harihara'):
+            u3 = User(username='Harihara', is_admin=True, employee_id='E0015')
+            u3.set_password('Hari123')  # Change to a strong, unique password
+            db.session.add(u3)
+
         db.session.commit()
     app.run(debug=True)
