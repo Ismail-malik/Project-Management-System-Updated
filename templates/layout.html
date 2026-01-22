@@ -11,14 +11,12 @@
 {% set on_login = (request.endpoint == 'login') %}
 
 <body>
-  <!-- Global title at very top -->
   <div class="title-strip">
     <div class="container page-wrap">
       <h1 class="global-title">Project Management System</h1>
     </div>
   </div>
 
-  <!-- Blue topbar (no labels on login) -->
   <div class="topbar py-2">
     <div class="container page-wrap d-flex align-items-center justify-content-between">
       {% if on_login %}
@@ -30,6 +28,7 @@
         {% if session.get('is_admin') %}
         <a href="/employees">Employees</a>
         <a href="/projects">Projects</a>
+        <a href="{{ url_for('create_users_page') }}">Create Users</a>
         {% endif %}
         <a href="/time-entries">Time Entries</a>
       </div>

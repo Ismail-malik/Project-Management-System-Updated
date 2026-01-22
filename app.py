@@ -15,6 +15,7 @@ db = SQLAlchemy(app)
 BUSINESS_START = '08:00'
 BUSINESS_END = '17:00'
 
+# --- MODELS ---
 class Employee(db.Model):
     id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String, nullable=False)
@@ -62,8 +63,7 @@ class TimeEntry(db.Model):
     def as_dict(self):
         return {'id': self.id, 'employee_id': self.employee_id, 'project_id': self.project_id, 'entry_date': self.entry_date.isoformat(), 'start_time': self.start_time, 'end_time': self.end_time, 'working_hours': round(self.working_hours, 2), 'overtime_hours': round(self.overtime_hours, 2), 'notes': self.notes}
 
-# helpers
-
+# --- HELPERS ---
 def parse_time(tstr: str) -> dtime: return datetime.strptime(tstr, '%H:%M').time()
 
 def hours(delta): return delta.total_seconds() / 3600.0
@@ -89,15 +89,12 @@ def compute_hours(entry_date: date, start_str: str, end_str: str):
     total_working = max(0.0, office_hours) + overtime_total
     return round(total_working, 2), round(overtime_total, 2)
 
-# payload
-
 def payload():
     data = request.get_json(silent=True)
     if not data: data = request.form.to_dict() if request.form else request.args.to_dict()
     return data or {}
 
-# decorators
-
+# --- DECORATORS ---
 def login_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
@@ -116,7 +113,7 @@ def admin_required(view_func):
         return view_func(*args, **kwargs)
     return wrapper
 
-# pages
+# --- PAGES ---
 @app.route('/')
 @login_required
 def home(): return render_template('index.html')
@@ -135,6 +132,15 @@ def projects_page(): return render_template('projects.html')
 @login_required
 def time_entries_page(): return render_template('time_entries.html')
 
+# === NEW: Create Users Page with User List ===
+@app.route('/create-users')
+@login_required
+@admin_required
+def create_users_page():
+    # Fetch all users to display in the management table
+    users = User.query.all()
+    return render_template('create_users.html', users=users)
+
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
@@ -149,7 +155,7 @@ def login():
 @app.route('/logout')
 def logout(): session.clear(); return redirect(url_for('login'))
 
-# public API
+# --- PUBLIC API ---
 @app.route('/api/public/me')
 @login_required
 def public_me(): return jsonify({'username': session.get('user'), 'employee_id': session.get('employee_id')})
@@ -166,7 +172,7 @@ def public_employees():
     emps = Employee.query.order_by(Employee.id).all()
     return jsonify([{'id': e.id, 'name': e.name} for e in emps])
 
-# employees API
+# --- EMPLOYEES API ---
 @app.route('/api/employees', methods=['GET'])
 @login_required
 @admin_required
@@ -214,7 +220,7 @@ def delete_employee(emp_id):
     if cnt and cnt>0: return jsonify({'error': 'Cannot delete employee with existing time entries'}), 400
     e = Employee.query.get_or_404(emp_id); db.session.delete(e); db.session.commit(); return jsonify({'status': 'deleted'})
 
-# projects API
+# --- PROJECTS API ---
 @app.route('/api/projects', methods=['GET'])
 @login_required
 @admin_required
@@ -261,7 +267,7 @@ def delete_project(pid):
     if cnt and cnt>0: return jsonify({'error': 'Cannot delete project with existing time entries'}), 400
     p = Project.query.get_or_404(pid); db.session.delete(p); db.session.commit(); return jsonify({'status': 'deleted'})
 
-# time entries API
+# --- TIME ENTRIES API ---
 @app.route('/api/time-entries')
 @login_required
 def list_time_entries(): entries = TimeEntry.query.order_by(TimeEntry.entry_date.desc(), TimeEntry.id.desc()).all(); return jsonify([t.as_dict() for t in entries])
@@ -321,93 +327,98 @@ def update_time_entry(tid):
 @admin_required
 def delete_time_entry(tid): t = TimeEntry.query.get_or_404(tid); db.session.delete(t); db.session.commit(); return jsonify({'status':'deleted'})
 
-# dashboard
-
+# --- DASHBOARD ---
 @app.route('/api/dashboard')
 @login_required
 def dashboard():
     today = date.today()
     month_start = date(today.year, today.month, 1)
-
-    # Totals based on status, not overdue
     totals = {
         'employees': Employee.query.count(),
         'projects': Project.query.count(),
         'active_projects': Project.query.filter(Project.status == 'Active').count(),
-        'overdue_projects': 0,  # will compute below
+        'overdue_projects': 0,
     }
-
     proj_summaries = []
     overdue_projects = 0
-
     for p in Project.query.all():
         effective_target = p.extend_date or p.target_date
         days_gone = (today - p.start_date).days if today >= p.start_date else 0
-        days_remaining = (
-            (effective_target - today).days
-            if effective_target and effective_target >= today
-            else 0
-        )
-        overdue_days = (
-            (today - effective_target).days
-            if effective_target and today > effective_target
-            else 0
-        )
-
-        # Overdue is independent of status (still useful to see)
+        days_remaining = ((effective_target - today).days if effective_target and effective_target >= today else 0)
+        overdue_days = ((today - effective_target).days if effective_target and today > effective_target else 0)
         is_overdue = bool(effective_target and today > effective_target)
-        if is_overdue:
-            overdue_projects += 1
-
-        # Sum working/overtime this month for charts
-        entries = TimeEntry.query.filter(
-            TimeEntry.project_id == p.id,
-            TimeEntry.entry_date >= month_start,
-            TimeEntry.entry_date <= today
-        ).all()
+        if is_overdue: overdue_projects += 1
+        entries = TimeEntry.query.filter(TimeEntry.project_id == p.id, TimeEntry.entry_date >= month_start, TimeEntry.entry_date <= today).all()
         total_working = sum(e.working_hours for e in entries)
         total_overtime = sum(e.overtime_hours for e in entries)
-
         proj_summaries.append({
-            'project_id': p.id,
-            'project_code': p.project_code,
-            'project_name': p.project_name,
-            'days_gone': days_gone,
-            'days_remaining_to_target': days_remaining,
-            'overdue_days': overdue_days,
-            'total_working_hours_this_month': round(total_working, 2),
-            'total_overtime_hours_this_month': round(total_overtime, 2),
+            'project_id': p.id, 'project_code': p.project_code, 'project_name': p.project_name,
+            'days_gone': days_gone, 'days_remaining_to_target': days_remaining, 'overdue_days': overdue_days,
+            'total_working_hours_this_month': round(total_working, 2), 'total_overtime_hours_this_month': round(total_overtime, 2),
             'status': p.status
         })
-
-    # finalize counters
     totals['overdue_projects'] = overdue_projects
-
-    # These two totals are fine as-is
-    entries_month = TimeEntry.query.filter(
-        TimeEntry.entry_date >= month_start,
-        TimeEntry.entry_date <= today
-    ).all()
+    entries_month = TimeEntry.query.filter(TimeEntry.entry_date >= month_start, TimeEntry.entry_date <= today).all()
     totals['working_hours_this_month'] = round(sum(e.working_hours for e in entries_month), 2)
     totals['overtime_hours_this_month'] = round(sum(e.overtime_hours for e in entries_month), 2)
-
-    # Top overtime employees (unchanged)
     overtime_by_emp = {}
     for e in entries_month:
         overtime_by_emp[e.employee_id] = overtime_by_emp.get(e.employee_id, 0.0) + e.overtime_hours
-    top_employees = sorted(
-        [{'employee_id': k, 'overtime_hours': round(v, 2)} for k, v in overtime_by_emp.items()],
-        key=lambda x: x['overtime_hours'],
-        reverse=True
-    )[:5]
+    top_employees = sorted([{'employee_id': k, 'overtime_hours': round(v, 2)} for k, v in overtime_by_emp.items()], key=lambda x: x['overtime_hours'], reverse=True)[:5]
+    return jsonify({'totals': totals, 'projects': proj_summaries, 'top_employees_by_overtime': top_employees, 'business_hours': {'start': BUSINESS_START, 'end': BUSINESS_END}})
 
-    return jsonify({
-        'totals': totals,
-        'projects': proj_summaries,
-        'top_employees_by_overtime': top_employees,
-        'business_hours': {'start': BUSINESS_START, 'end': BUSINESS_END}
-    })
+# === NEW: USER MANAGEMENT APIs ===
 
+@app.route('/api/users/create', methods=['POST'])
+@login_required
+@admin_required
+def create_user_account():
+    data = payload()
+    if not data or not all(k in data for k in ['username', 'password', 'employee_id']):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    emp = Employee.query.get(data['employee_id'])
+    if not emp:
+        return jsonify({'error': 'Invalid Employee ID. Please create the employee profile first.'}), 404
+
+    if User.query.get(data['username']):
+        return jsonify({'error': 'Username already exists'}), 400
+
+    is_admin = bool(data.get('is_admin'))
+
+    u = User(username=data['username'], is_admin=is_admin, employee_id=data['employee_id'])
+    u.set_password(data['password'])
+
+    try:
+        db.session.add(u)
+        db.session.commit()
+        return jsonify({'message': 'User created successfully!'}), 201
+    except Exception as ex:
+        db.session.rollback()
+        return jsonify({'error': str(ex)}), 500
+
+@app.route('/api/users/<username>/toggle-role', methods=['POST'])
+@login_required
+@admin_required
+def toggle_user_role(username):
+    # Prevent changing your own role (so you don't lock yourself out)
+    if username == session.get('user'):
+        return jsonify({'error': 'You cannot change your own role.'}), 400
+
+    user = User.query.get_or_404(username)
+    
+    # Toggle logic: if True becomes False, if False becomes True
+    user.is_admin = not user.is_admin
+    
+    try:
+        db.session.commit()
+        role_name = "Admin" if user.is_admin else "Employee"
+        return jsonify({'message': f'User {username} is now an {role_name}', 'is_admin': user.is_admin})
+    except Exception as ex:
+        db.session.rollback()
+        return jsonify({'error': str(ex)}), 500
+
+# --- MAIN ---
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
@@ -416,18 +427,7 @@ if __name__ == '__main__':
         if not Employee.query.get('E004'):
             e4 = Employee(id='E004', name='Ismail', department='IT', email='ismail@example.com', phone='1004'); db.session.add(e4)
         if not User.query.get('Ismail'):
-            u2 = User(username='Ismail', is_admin=False, employee_id='E004'); u2.set_password('Ismail123'); db.session.add(u2)
+            u2 = User(username='Ismail', is_admin=True, employee_id='E004'); u2.set_password('Ismail123'); db.session.add(u2)
         
- # ✅ Add another employee + login here
-        if not Employee.query.get('E0015'):
-            e5 = Employee(id='E0015', name='Harihara', department='Manager',
-                          email='', phone='')
-            db.session.add(e5)
-
-        if not User.query.get('Harihara'):
-            u3 = User(username='Harihara', is_admin=True, employee_id='E0015')
-            u3.set_password('Hari123')  # Change to a strong, unique password
-            db.session.add(u3)
-
         db.session.commit()
     app.run(debug=True)
