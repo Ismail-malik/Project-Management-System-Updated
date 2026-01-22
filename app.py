@@ -418,6 +418,25 @@ def toggle_user_role(username):
         db.session.rollback()
         return jsonify({'error': str(ex)}), 500
 
+# --- ADD THIS NEW ROUTE ---
+@app.route('/api/users/<username>/delete', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_user_account(username):
+    # Prevent deleting yourself
+    if username == session.get('user'):
+        return jsonify({'error': 'You cannot delete your own account.'}), 400
+
+    user = User.query.get_or_404(username)
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'message': f'User {username} deleted successfully.'})
+    except Exception as ex:
+        db.session.rollback()
+        return jsonify({'error': str(ex)}), 500
+    
 # --- MAIN ---
 if __name__ == '__main__':
     with app.app_context():

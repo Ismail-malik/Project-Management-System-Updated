@@ -73,7 +73,5 @@
     <tbody id="projects-body"></tbody>
   </table>
 </div>
-{% if session['is_admin'] %}
-<li><a href="{{ url_for('create_users_page') }}">Create Users</a></li>
-{% endif %}
+
 {% endblock %}
